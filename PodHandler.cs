@@ -39,6 +39,11 @@ namespace pod.xledger.tsql_scriptdom {
                         await HandleMessage(s, msg, cts);
                     }
                 } catch (OperationCanceledException) {
+                } catch(BencodeNET.Exceptions.BencodeException ex) when /* HACK */ (ex.Message.Contains("but reached end of stream")) {
+                    // ^ This message filter appears to be the only way to check if the stream is closed, because
+                    // the BencodeNET does not expose an inner exception, specific code, etc when the stream closes.
+                    await SendException(null, "Reached end of stream");
+                    return;
                 } catch (Exception ex) {
                     await SendException(null, ex.Message);
                 }
