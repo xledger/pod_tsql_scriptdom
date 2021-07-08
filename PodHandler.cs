@@ -15,11 +15,15 @@ using System.Threading.Tasks;
 
 namespace pod.xledger.tsql_scriptdom {
     public class PodHandler {
+        Stream _inputStream;
+        Stream _outputStream;
         PipeReader _reader;
         PipeWriter _writer;
         BencodeParser _parser;
 
         public PodHandler(Stream inputStream, Stream outputStream) {
+            _inputStream = inputStream;
+            _outputStream = outputStream;
             _reader = PipeReader.Create(inputStream);
             _writer = PipeWriter.Create(outputStream, new StreamPipeWriterOptions(leaveOpen: true));
             _parser = new BencodeParser();
@@ -27,7 +31,7 @@ namespace pod.xledger.tsql_scriptdom {
 
         public async Task HandleMessages() {
             var cts = new CancellationTokenSource();
-            while (!cts.IsCancellationRequested) {
+            while (!cts.IsCancellationRequested && _inputStream.CanRead && _outputStream.CanWrite) {
                 try {
                     var msg = await _parser.ParseAsync<BDictionary>(_reader, cts.Token);
                     if (msg.TryGetValue("op", out IBObject op)) {
